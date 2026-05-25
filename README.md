@@ -26,7 +26,7 @@ When a URL is opened on your system, Browser Router intercepts it and shows a fl
 
 ## Install
 
-Download the latest `.app.zip` from [GitHub Releases](https://github.com/LumaKernel/url-catcher/releases), unzip, and move to `/Applications`.
+Download the latest `.app.zip` from [GitHub Releases](https://github.com/LumaKernel/browser-router/releases), unzip, and move to `/Applications`.
 
 Then open System Settings > Desktop & Dock > Default web browser and select "Browser Router".
 
