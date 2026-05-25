@@ -32,6 +32,9 @@ class Settings: ObservableObject {
     @Published var windowHeight: Double {
         didSet { UserDefaults.standard.set(windowHeight, forKey: "windowHeight") }
     }
+    @Published var urlLineLimit: Int {
+        didSet { UserDefaults.standard.set(urlLineLimit, forKey: "urlLineLimit") }
+    }
     @Published var hiddenBrowserIds: Set<String> {
         didSet { UserDefaults.standard.set(Array(hiddenBrowserIds), forKey: "hiddenBrowserIds") }
     }
@@ -49,6 +52,8 @@ class Settings: ObservableObject {
         self.iconOnly = UserDefaults.standard.bool(forKey: "iconOnly")
         self.clearOnClose = UserDefaults.standard.bool(forKey: "clearOnClose")
         self.autoCloseOnAction = UserDefaults.standard.bool(forKey: "autoCloseOnAction")
+        let storedLineLimit = UserDefaults.standard.integer(forKey: "urlLineLimit")
+        self.urlLineLimit = storedLineLimit > 0 ? storedLineLimit : 2
         let storedScale = UserDefaults.standard.double(forKey: "uiScale")
         self.uiScale = storedScale > 0 ? storedScale : 1.0
         let storedW = UserDefaults.standard.double(forKey: "windowWidth")
@@ -310,6 +315,7 @@ struct SettingsView: View {
                 Toggle("Auto-close after action", isOn: $settings.autoCloseOnAction)
             }
             Section("Appearance") {
+                Stepper("URL line limit: \(settings.urlLineLimit)", value: $settings.urlLineLimit, in: 1...10)
                 HStack {
                     Text("UI scale")
                     Slider(value: $settings.uiScale, in: 0.7...4.0, step: 0.1)
@@ -418,7 +424,7 @@ struct ContentView: View {
                                     Text(entry.url)
                                         .font(settings.scaledFont)
                                         .foregroundColor(Theme.textPrimary)
-                                        .lineLimit(1)
+                                        .lineLimit(settings.urlLineLimit)
                                         .truncationMode(.middle)
                                         .help(entry.url)
                                     Text(entry.timestamp, style: .time)
