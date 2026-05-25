@@ -37,13 +37,13 @@ class Settings: ObservableObject {
     }
 
     var scaledFont: Font { .system(size: 13 * uiScale, design: .monospaced) }
-    var scaledButtonFont: Font { .system(size: 13 * uiScale) }
+    var scaledButtonFont: Font { .system(size: 13 * pow(uiScale, 1.15)) }
     var scaledCaption: Font { .system(size: 10 * uiScale) }
-    var scaledIconSize: CGFloat { 16 * uiScale }
+    var scaledIconSize: CGFloat { 16 * pow(uiScale, 1.15) }
     var scaledPadH: CGFloat { 14 * uiScale }
     var scaledPadV: CGFloat { 10 * uiScale }
     var scaledButtonWidth: CGFloat { 54 * uiScale }
-    var scaledIconButtonSize: CGFloat { 20 * uiScale }
+    var scaledIconButtonSize: CGFloat { 20 * pow(uiScale, 1.15) }
 
     private init() {
         self.iconOnly = UserDefaults.standard.bool(forKey: "iconOnly")
