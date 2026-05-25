@@ -22,8 +22,8 @@ cp "$SCRIPT_DIR/BrowserRouter/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
 # Embed appVersion from Version.swift into Info.plist
 APP_VERSION=$(grep -o 'appVersion: UInt = [0-9]*' "$SCRIPT_DIR/BrowserRouter/Version.swift" | grep -o '[0-9]*')
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $APP_VERSION" "$CONTENTS_DIR/Info.plist"
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 0.0.$APP_VERSION" "$CONTENTS_DIR/Info.plist"
-echo "Version: 0.0.$APP_VERSION ($APP_VERSION)"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION.0.0" "$CONTENTS_DIR/Info.plist"
+echo "Version: $APP_VERSION.0.0 ($APP_VERSION)"
 
 echo "Signing..."
 codesign --force --sign - "$BUNDLE_DIR"
