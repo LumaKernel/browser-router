@@ -13,6 +13,13 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 echo "Compiling..."
 cd "$SCRIPT_DIR"
+
+# Generate BuildInfo.swift with commit hash
+COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+cat > "$SCRIPT_DIR/BrowserRouter/BuildInfo.swift" <<SWIFT
+let buildCommit: String = "$COMMIT_HASH"
+SWIFT
+
 swift build -c release
 
 cp ".build/release/BrowserRouter" "$MACOS_DIR/BrowserRouter"

@@ -129,7 +129,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let appMenuItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "About Browser Router", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: "About Browser Router", action: #selector(showAbout), keyEquivalent: "")
         appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(withTitle: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
         appMenu.addItem(NSMenuItem.separator())
@@ -158,6 +158,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             window?.makeKeyAndOrderFront(nil)
         }
         return true
+    }
+
+    @objc func showAbout() {
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .credits: NSAttributedString(
+                string: "v\(appVersion).0.0 (\(buildCommit))",
+                attributes: [.font: NSFont.systemFont(ofSize: 11)]
+            ),
+        ])
     }
 
     @objc func openSettings() {
@@ -368,7 +377,7 @@ struct SettingsView: View {
             Section {
                 HStack {
                     Spacer()
-                    Text("Browser Router v\(appVersion).0.0")
+                    Text("Browser Router v\(appVersion).0.0 (\(buildCommit))")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
