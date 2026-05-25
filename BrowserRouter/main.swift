@@ -26,8 +26,15 @@ class Settings: ObservableObject {
     @Published var uiScale: Double {
         didSet { UserDefaults.standard.set(uiScale, forKey: "uiScale") }
     }
+    @Published var windowWidth: Double {
+        didSet { UserDefaults.standard.set(windowWidth, forKey: "windowWidth") }
+    }
+    @Published var windowHeight: Double {
+        didSet { UserDefaults.standard.set(windowHeight, forKey: "windowHeight") }
+    }
 
     var scaledFont: Font { .system(size: 13 * uiScale, design: .monospaced) }
+    var scaledButtonFont: Font { .system(size: 13 * uiScale) }
     var scaledCaption: Font { .system(size: 10 * uiScale) }
     var scaledIconSize: CGFloat { 16 * uiScale }
     var scaledPadH: CGFloat { 14 * uiScale }
@@ -39,8 +46,12 @@ class Settings: ObservableObject {
         self.iconOnly = UserDefaults.standard.bool(forKey: "iconOnly")
         self.clearOnClose = UserDefaults.standard.bool(forKey: "clearOnClose")
         self.autoCloseOnAction = UserDefaults.standard.bool(forKey: "autoCloseOnAction")
-        let stored = UserDefaults.standard.double(forKey: "uiScale")
-        self.uiScale = stored > 0 ? stored : 1.0
+        let storedScale = UserDefaults.standard.double(forKey: "uiScale")
+        self.uiScale = storedScale > 0 ? storedScale : 1.0
+        let storedW = UserDefaults.standard.double(forKey: "windowWidth")
+        self.windowWidth = storedW > 0 ? storedW : 600
+        let storedH = UserDefaults.standard.double(forKey: "windowHeight")
+        self.windowHeight = storedH > 0 ? storedH : 300
     }
 }
 
@@ -63,8 +74,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let contentView = ContentView(urlStore: urlStore)
 
+        let s = Settings.shared
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 200),
+            contentRect: NSRect(x: 0, y: 0, width: s.windowWidth, height: s.windowHeight),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -124,7 +136,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 350, height: 180),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 340),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -236,19 +248,38 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Toggle("Icon-only browser buttons", isOn: $settings.iconOnly)
-            Toggle("Clear history on window close", isOn: $settings.clearOnClose)
-            Toggle("Auto-close after action", isOn: $settings.autoCloseOnAction)
-            HStack {
-                Text("UI size")
-                Slider(value: $settings.uiScale, in: 0.7...2.0, step: 0.1)
-                Text("\(Int(settings.uiScale * 100))%")
-                    .frame(width: 40, alignment: .trailing)
-                    .monospacedDigit()
+            Section("Behavior") {
+                Toggle("Icon-only browser buttons", isOn: $settings.iconOnly)
+                Toggle("Clear history on window close", isOn: $settings.clearOnClose)
+                Toggle("Auto-close after action", isOn: $settings.autoCloseOnAction)
+            }
+            Section("Appearance") {
+                HStack {
+                    Text("UI scale")
+                    Slider(value: $settings.uiScale, in: 0.7...2.0, step: 0.1)
+                    Text("\(Int(settings.uiScale * 100))%")
+                        .frame(width: 40, alignment: .trailing)
+                        .monospacedDigit()
+                }
+                HStack {
+                    Text("Window width")
+                    Slider(value: $settings.windowWidth, in: 300...1200, step: 50)
+                    Text("\(Int(settings.windowWidth))")
+                        .frame(width: 40, alignment: .trailing)
+                        .monospacedDigit()
+                }
+                HStack {
+                    Text("Window height")
+                    Slider(value: $settings.windowHeight, in: 150...800, step: 50)
+                    Text("\(Int(settings.windowHeight))")
+                        .frame(width: 40, alignment: .trailing)
+                        .monospacedDigit()
+                }
             }
         }
-        .padding(20)
-        .frame(minWidth: 360, minHeight: 160)
+        .formStyle(.grouped)
+        .padding(12)
+        .frame(minWidth: 400, minHeight: 300)
     }
 }
 
@@ -304,6 +335,7 @@ struct ContentView: View {
                                             }
                                         }) {
                                             Text(copiedId == entry.id ? "Copied!" : "Copy")
+                                                .font(settings.scaledButtonFont)
                                                 .frame(width: settings.scaledButtonWidth)
                                         }
                                         .buttonStyle(.borderedProminent)
@@ -322,6 +354,7 @@ struct ContentView: View {
                                                     HStack(spacing: 3) {
                                                         Image(nsImage: browser.icon)
                                                         Text(browser.name)
+                                                            .font(settings.scaledButtonFont)
                                                     }
                                                 }
                                             }
@@ -360,7 +393,18 @@ struct ContentView: View {
             }
         }
         .background(Theme.bgDark)
-        .frame(minWidth: 500, minHeight: 200)
+        .frame(minWidth: 300, minHeight: 150)
+        .onChange(of: settings.windowWidth) { resizeWindow() }
+        .onChange(of: settings.windowHeight) { resizeWindow() }
+    }
+
+    private func resizeWindow() {
+        guard let window = NSApp.windows.first(where: { $0.title == "Browser Router" }) else { return }
+        var frame = window.frame
+        let newSize = NSSize(width: settings.windowWidth, height: settings.windowHeight)
+        frame.origin.y += frame.size.height - newSize.height
+        frame.size = newSize
+        window.setFrame(frame, display: true, animate: true)
     }
 }
 
