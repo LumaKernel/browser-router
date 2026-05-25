@@ -39,7 +39,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         window.isReleasedWhenClosed = false
-        window.title = "URL Catcher"
+        window.title = "Browser Router"
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.center()
@@ -55,7 +55,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: "Quit URL Catcher", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Quit Browser Router", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appMenuItem.submenu = appMenu
         mainMenu.addItem(appMenuItem)
 
@@ -95,7 +95,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         window.isReleasedWhenClosed = false
-        window.title = "URL Catcher Settings"
+        window.title = "Browser Router Settings"
         window.level = .floating
         window.center()
         window.contentView = NSHostingView(rootView: SettingsView())

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-APP_NAME="URL Catcher"
+APP_NAME="Browser Router"
 BUNDLE_DIR="$SCRIPT_DIR/build/${APP_NAME}.app"
 CONTENTS_DIR="$BUNDLE_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
@@ -15,8 +15,8 @@ echo "Compiling..."
 cd "$SCRIPT_DIR"
 swift build -c release
 
-cp ".build/release/URLCatcher" "$MACOS_DIR/URLCatcher"
-cp "$SCRIPT_DIR/URLCatcher/Info.plist" "$CONTENTS_DIR/Info.plist"
+cp ".build/release/BrowserRouter" "$MACOS_DIR/BrowserRouter"
+cp "$SCRIPT_DIR/BrowserRouter/Info.plist" "$CONTENTS_DIR/Info.plist"
 
 echo "Signing..."
 codesign --force --sign - "$BUNDLE_DIR"
@@ -25,7 +25,7 @@ codesign -v "$BUNDLE_DIR"
 echo "Built: $BUNDLE_DIR"
 echo ""
 echo "To install, run:"
-echo "  cp -r \"$BUNDLE_DIR\" /Applications/"
+echo "  ./install.sh"
 echo ""
 echo "Then open System Settings > Desktop & Dock > Default web browser"
-echo "and select 'URL Catcher'."
+echo "and select 'Browser Router'."

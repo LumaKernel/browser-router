@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "URLCatcher",
+    name: "BrowserRouter",
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
-            name: "URLCatcher",
-            path: "URLCatcher"
+            name: "BrowserRouter",
+            path: "BrowserRouter"
         )
     ]
 )

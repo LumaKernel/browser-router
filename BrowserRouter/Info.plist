@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>URL Catcher</string>
+	<string>Browser Router</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.lumakernel.url-catcher</string>
+	<string>com.lumakernel.browser-router</string>
 	<key>CFBundleVersion</key>
 	<string>1.0</string>
 	<key>CFBundleShortVersionString</key>
@@ -13,7 +13,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleExecutable</key>
-	<string>URLCatcher</string>
+	<string>BrowserRouter</string>
 	<key>CFBundleIconFile</key>
 	<string></string>
 	<key>LSMinimumSystemVersion</key>
