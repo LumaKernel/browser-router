@@ -5,6 +5,7 @@ enum Theme {
     static let bgDark = Color(red: 0.08, green: 0.18, blue: 0.28)
     static let bgMid = Color(red: 0.10, green: 0.22, blue: 0.33)
     static let accent = Color(red: 0.3, green: 0.75, blue: 0.95)
+    static let highlight = Color(red: 0.3, green: 0.75, blue: 0.95).opacity(0.12)
     static let textPrimary = Color(red: 0.85, green: 0.92, blue: 0.97)
     static let textSecondary = Color(red: 0.5, green: 0.65, blue: 0.75)
     static let border = Color(red: 0.2, green: 0.4, blue: 0.55)
@@ -16,9 +17,17 @@ class Settings: ObservableObject {
     @Published var iconOnly: Bool {
         didSet { UserDefaults.standard.set(iconOnly, forKey: "iconOnly") }
     }
+    @Published var clearOnClose: Bool {
+        didSet { UserDefaults.standard.set(clearOnClose, forKey: "clearOnClose") }
+    }
+    @Published var autoCloseOnAction: Bool {
+        didSet { UserDefaults.standard.set(autoCloseOnAction, forKey: "autoCloseOnAction") }
+    }
 
     private init() {
         self.iconOnly = UserDefaults.standard.bool(forKey: "iconOnly")
+        self.clearOnClose = UserDefaults.standard.bool(forKey: "clearOnClose")
+        self.autoCloseOnAction = UserDefaults.standard.bool(forKey: "autoCloseOnAction")
     }
 }
 
@@ -55,6 +64,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         window.contentView = NSHostingView(rootView: contentView)
         window.makeKeyAndOrderFront(nil)
+        window.delegate = self
         self.window = window
     }
 
@@ -99,7 +109,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 300, height: 120),
+            contentRect: NSRect(x: 0, y: 0, width: 350, height: 180),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -114,6 +124,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.settingsWindow = window
     }
 
+    func closeMainWindow() {
+        window?.performClose(nil)
+    }
+
     @objc func handleGetURL(_ event: NSAppleEventDescriptor, replyEvent: NSAppleEventDescriptor) {
         guard let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue else {
             return
@@ -122,6 +136,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async { [weak self] in
             self?.window?.makeKeyAndOrderFront(nil)
             NSApp.activate()
+        }
+    }
+}
+
+extension AppDelegate: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        guard let closingWindow = notification.object as? NSWindow,
+              closingWindow === window else { return }
+        if Settings.shared.clearOnClose {
+            urlStore.clear()
         }
     }
 }
@@ -163,6 +187,7 @@ struct BrowserInfo: Identifiable {
 
 class URLStore: ObservableObject {
     @Published var urls: [URLEntry] = []
+    @Published var highlightedId: UUID?
 
     struct URLEntry: Identifiable {
         let id = UUID()
@@ -174,6 +199,19 @@ class URLStore: ObservableObject {
         let entry = URLEntry(url: url, timestamp: Date())
         DispatchQueue.main.async {
             self.urls.insert(entry, at: 0)
+            self.highlightedId = entry.id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                if self.highlightedId == entry.id {
+                    self.highlightedId = nil
+                }
+            }
+        }
+    }
+
+    func clear() {
+        DispatchQueue.main.async {
+            self.urls.removeAll()
+            self.highlightedId = nil
         }
     }
 }
@@ -184,8 +222,11 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Toggle("Icon-only browser buttons", isOn: $settings.iconOnly)
+            Toggle("Clear history on window close", isOn: $settings.clearOnClose)
+            Toggle("Auto-close after action", isOn: $settings.autoCloseOnAction)
         }
         .padding(20)
+        .frame(minWidth: 320, minHeight: 120)
     }
 }
 
@@ -194,6 +235,15 @@ struct ContentView: View {
     @ObservedObject private var settings = Settings.shared
     @State private var copiedId: UUID?
     private let browsers = BrowserInfo.detectBrowsers()
+
+    private func performAction(_ action: () -> Void) {
+        action()
+        if settings.autoCloseOnAction {
+            DispatchQueue.main.async {
+                NSApp.keyWindow?.performClose(nil)
+            }
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -204,63 +254,84 @@ struct ContentView: View {
                     .foregroundColor(Theme.textSecondary)
                 Spacer()
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(urlStore.urls) { entry in
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(entry.url)
-                                    .font(.system(.body, design: .monospaced))
-                                    .foregroundColor(Theme.textPrimary)
-                                    .textSelection(.enabled)
-                                    .lineLimit(2)
-                                Text(entry.timestamp, style: .time)
-                                    .font(.caption)
-                                    .foregroundColor(Theme.textSecondary)
-                                FlowLayout(spacing: 6) {
-                                    Button(action: {
-                                        NSPasteboard.general.clearContents()
-                                        NSPasteboard.general.setString(entry.url, forType: .string)
-                                        copiedId = entry.id
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                            if copiedId == entry.id {
-                                                copiedId = nil
-                                            }
-                                        }
-                                    }) {
-                                        Text(copiedId == entry.id ? "Copied!" : "Copy")
-                                            .frame(width: 54)
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(Theme.accent)
-
-                                    ForEach(browsers) { browser in
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 0) {
+                            ForEach(urlStore.urls) { entry in
+                                let isHighlighted = urlStore.highlightedId == entry.id
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(entry.url)
+                                        .font(.system(.body, design: .monospaced))
+                                        .foregroundColor(Theme.textPrimary)
+                                        .textSelection(.enabled)
+                                        .lineLimit(2)
+                                    Text(entry.timestamp, style: .time)
+                                        .font(.caption)
+                                        .foregroundColor(Theme.textSecondary)
+                                    FlowLayout(spacing: 6) {
                                         Button(action: {
-                                            browser.open(url: entry.url)
-                                        }) {
-                                            if settings.iconOnly {
-                                                Image(nsImage: browser.icon)
-                                                    .frame(width: 20, height: 20)
-                                            } else {
-                                                HStack(spacing: 3) {
-                                                    Image(nsImage: browser.icon)
-                                                    Text(browser.name)
+                                            performAction {
+                                                NSPasteboard.general.clearContents()
+                                                NSPasteboard.general.setString(entry.url, forType: .string)
+                                                copiedId = entry.id
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                                    if copiedId == entry.id {
+                                                        copiedId = nil
+                                                    }
                                                 }
                                             }
+                                        }) {
+                                            Text(copiedId == entry.id ? "Copied!" : "Copy")
+                                                .frame(width: 54)
                                         }
-                                        .buttonStyle(.bordered)
+                                        .buttonStyle(.borderedProminent)
                                         .tint(Theme.accent)
-                                        .help(browser.name)
+
+                                        ForEach(browsers) { browser in
+                                            Button(action: {
+                                                performAction {
+                                                    browser.open(url: entry.url)
+                                                }
+                                            }) {
+                                                if settings.iconOnly {
+                                                    Image(nsImage: browser.icon)
+                                                        .frame(width: 20, height: 20)
+                                                } else {
+                                                    HStack(spacing: 3) {
+                                                        Image(nsImage: browser.icon)
+                                                        Text(browser.name)
+                                                    }
+                                                }
+                                            }
+                                            .buttonStyle(.bordered)
+                                            .tint(Theme.accent)
+                                            .help(browser.name)
+                                        }
                                     }
                                 }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(isHighlighted ? Theme.highlight : Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .strokeBorder(isHighlighted ? Theme.accent.opacity(0.5) : Color.clear, lineWidth: 1),
+                                    alignment: .center
+                                )
+                                .overlay(
+                                    Rectangle()
+                                        .frame(height: 1)
+                                        .foregroundColor(Theme.border.opacity(0.4)),
+                                    alignment: .bottom
+                                )
+                                .id(entry.id)
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .overlay(
-                                Rectangle()
-                                    .frame(height: 1)
-                                    .foregroundColor(Theme.border.opacity(0.4)),
-                                alignment: .bottom
-                            )
+                        }
+                    }
+                    .onChange(of: urlStore.highlightedId) {
+                        if let id = urlStore.highlightedId {
+                            withAnimation {
+                                proxy.scrollTo(id, anchor: .top)
+                            }
                         }
                     }
                 }
