@@ -385,45 +385,6 @@ struct SettingsView: View {
     }
 }
 
-struct TruncatedURLView: View {
-    let url: String
-    let font: Font
-
-    var body: some View {
-        GeometryReader { geo in
-            let charWidth: CGFloat = 7.8 * Settings.shared.uiScale
-            let maxChars = max(20, Int(geo.size.width / charWidth) * 2)
-            let p = truncate(url, maxLength: maxChars)
-            if p.ellipsis {
-                (Text(p.head)
-                    .foregroundColor(Theme.textPrimary)
-                + Text(" ... ")
-                    .foregroundColor(Theme.accent.opacity(0.7))
-                + Text(p.tail)
-                    .foregroundColor(Theme.textPrimary))
-                    .font(font)
-                    .lineLimit(2)
-                    .help(url)
-            } else {
-                Text(url)
-                    .font(font)
-                    .foregroundColor(Theme.textPrimary)
-                    .lineLimit(2)
-                    .help(url)
-            }
-        }
-        .frame(height: lineHeight * 2)
-    }
-
-    private var lineHeight: CGFloat { 16 * Settings.shared.uiScale }
-
-    private func truncate(_ s: String, maxLength: Int) -> (head: String, ellipsis: Bool, tail: String) {
-        if s.count <= maxLength { return (s, false, "") }
-        let half = maxLength / 2
-        return (String(s.prefix(half)), true, String(s.suffix(half)))
-    }
-}
-
 struct ContentView: View {
     @ObservedObject var urlStore: URLStore
     @ObservedObject private var settings = Settings.shared
@@ -454,7 +415,12 @@ struct ContentView: View {
                             ForEach(urlStore.urls) { entry in
                                 let isHighlighted = urlStore.highlightedId == entry.id
                                 VStack(alignment: .leading, spacing: 6 * settings.uiScale) {
-                                    TruncatedURLView(url: entry.url, font: settings.scaledFont)
+                                    Text(entry.url)
+                                        .font(settings.scaledFont)
+                                        .foregroundColor(Theme.textPrimary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                        .help(entry.url)
                                     Text(entry.timestamp, style: .time)
                                         .font(settings.scaledCaption)
                                         .foregroundColor(Theme.textSecondary)
