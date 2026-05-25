@@ -385,6 +385,43 @@ struct SettingsView: View {
     }
 }
 
+struct TruncatedURLView: View {
+    let url: String
+    let font: Font
+    private let maxLength = 120
+
+    private var parts: (head: String, ellipsis: Bool, tail: String) {
+        if url.count <= maxLength {
+            return (url, false, "")
+        }
+        let half = maxLength / 2
+        let head = String(url.prefix(half))
+        let tail = String(url.suffix(half))
+        return (head, true, tail)
+    }
+
+    var body: some View {
+        let p = parts
+        if p.ellipsis {
+            (Text(p.head)
+                .foregroundColor(Theme.textPrimary)
+            + Text(" ... ")
+                .foregroundColor(Theme.accent.opacity(0.7))
+            + Text(p.tail)
+                .foregroundColor(Theme.textPrimary))
+                .font(font)
+                .lineLimit(2)
+                .help(url)
+        } else {
+            Text(url)
+                .font(font)
+                .foregroundColor(Theme.textPrimary)
+                .lineLimit(2)
+                .help(url)
+        }
+    }
+}
+
 struct ContentView: View {
     @ObservedObject var urlStore: URLStore
     @ObservedObject private var settings = Settings.shared
@@ -415,11 +452,7 @@ struct ContentView: View {
                             ForEach(urlStore.urls) { entry in
                                 let isHighlighted = urlStore.highlightedId == entry.id
                                 VStack(alignment: .leading, spacing: 6 * settings.uiScale) {
-                                    Text(entry.url)
-                                        .font(settings.scaledFont)
-                                        .foregroundColor(Theme.textPrimary)
-                                        .textSelection(.enabled)
-                                        .lineLimit(2)
+                                    TruncatedURLView(url: entry.url, font: settings.scaledFont)
                                     Text(entry.timestamp, style: .time)
                                         .font(settings.scaledCaption)
                                         .foregroundColor(Theme.textSecondary)
