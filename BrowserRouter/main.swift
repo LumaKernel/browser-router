@@ -256,9 +256,9 @@ struct SettingsView: View {
             Section("Appearance") {
                 HStack {
                     Text("UI scale")
-                    Slider(value: $settings.uiScale, in: 0.7...2.0, step: 0.1)
+                    Slider(value: $settings.uiScale, in: 0.7...4.0, step: 0.1)
                     Text("\(Int(settings.uiScale * 100))%")
-                        .frame(width: 40, alignment: .trailing)
+                        .frame(width: 48, alignment: .trailing)
                         .monospacedDigit()
                 }
                 HStack {
