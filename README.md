@@ -6,6 +6,10 @@
 
 <p align="center">A macOS app that registers as the default web browser and lets you choose which browser to open URLs in.</p>
 
+<p align="center">
+  <img src="docs/screenshot.png" width="660" alt="Browser Router screenshot">
+</p>
+
 ## What it does
 
 When a URL is opened on your system, Browser Router intercepts it and shows a floating window with the URL and buttons to open it in any of your installed browsers, or copy it to clipboard.
