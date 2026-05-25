@@ -12,112 +12,134 @@ func generateIcon(size: Int) -> NSImage {
         return image
     }
 
-    // Background: rounded rect with gradient
-    let inset: CGFloat = s * 0.08
-    let rect = CGRect(x: inset, y: inset, width: s - inset * 2, height: s - inset * 2)
-    let cornerRadius = s * 0.2
-    let bgPath = CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
+    // SVG viewBox 1024x1024 -> s. CG Y is bottom-up, SVG top-down.
+    let scale = s / 1024.0
+    func sx(_ v: CGFloat) -> CGFloat { v * scale }
+    func sy(_ v: CGFloat) -> CGFloat { s - v * scale }
+    func sw(_ v: CGFloat) -> CGFloat { v * scale }
+    func sh(_ v: CGFloat) -> CGFloat { v * scale }
 
-    // Gradient: deep teal to vibrant blue
-    let colors = [
-        CGColor(srgbRed: 0.08, green: 0.18, blue: 0.28, alpha: 1.0),
-        CGColor(srgbRed: 0.10, green: 0.35, blue: 0.55, alpha: 1.0),
+    // === Background: rounded superellipse with rose gradient ===
+    let inset = s * 0.04
+    let bgRect = CGRect(x: inset, y: inset, width: s - inset * 2, height: s - inset * 2)
+    let cornerRadius = s * 0.22
+    let bgPath = CGPath(roundedRect: bgRect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
+
+    let bgColors = [
+        CGColor(srgbRed: 0.984, green: 0.443, blue: 0.522, alpha: 1.0),
+        CGColor(srgbRed: 0.882, green: 0.114, blue: 0.282, alpha: 1.0),
+        CGColor(srgbRed: 0.533, green: 0.075, blue: 0.216, alpha: 1.0),
     ]
-    let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0.0, 1.0])!
+    let bgGradient = CGGradient(
+        colorsSpace: CGColorSpaceCreateDeviceRGB(),
+        colors: bgColors as CFArray,
+        locations: [0.0, 0.55, 1.0]
+    )!
 
     ctx.saveGState()
     ctx.addPath(bgPath)
     ctx.clip()
-    ctx.drawLinearGradient(gradient, start: CGPoint(x: s/2, y: s), end: CGPoint(x: s/2, y: 0), options: [])
+    ctx.drawLinearGradient(
+        bgGradient,
+        start: CGPoint(x: s * 0.2, y: s * 0.85),
+        end: CGPoint(x: s * 0.8, y: s * 0.15),
+        options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+    )
     ctx.restoreGState()
 
-    // Subtle border
-    ctx.setStrokeColor(CGColor(srgbRed: 0.2, green: 0.5, blue: 0.7, alpha: 0.5))
-    ctx.setLineWidth(s * 0.015)
-    ctx.addPath(bgPath)
+    // === URL Bar (white rounded rect at top) ===
+    let barRect = CGRect(x: sx(120), y: sy(210 + 170), width: sw(784), height: sh(170))
+    let barPath = CGPath(roundedRect: barRect, cornerWidth: sh(85), cornerHeight: sh(85), transform: nil)
+    ctx.setFillColor(.white)
+    ctx.addPath(barPath)
+    ctx.fillPath()
+
+    // Red dot in URL bar
+    let dotR = sw(29.75)
+    ctx.setFillColor(CGColor(srgbRed: 0.882, green: 0.114, blue: 0.282, alpha: 1.0))
+    ctx.fillEllipse(in: CGRect(x: sx(205) - dotR, y: sy(295) - dotR, width: dotR * 2, height: dotR * 2))
+
+    // Pink bars in URL bar
+    ctx.setFillColor(CGColor(srgbRed: 0.992, green: 0.643, blue: 0.686, alpha: 1.0))
+    let b1 = CGRect(x: sx(264.5), y: sy(264.4 + 23.8), width: sw(125.44), height: sh(23.8))
+    ctx.addPath(CGPath(roundedRect: b1, cornerWidth: sh(11.9), cornerHeight: sh(11.9), transform: nil))
+    ctx.fillPath()
+
+    ctx.setFillColor(CGColor(srgbRed: 0.996, green: 0.804, blue: 0.827, alpha: 1.0))
+    let b2 = CGRect(x: sx(405.62), y: sy(264.4 + 23.8), width: sw(329.28), height: sh(23.8))
+    ctx.addPath(CGPath(roundedRect: b2, cornerWidth: sh(11.9), cornerHeight: sh(11.9), transform: nil))
+    ctx.fillPath()
+
+    ctx.setFillColor(CGColor(srgbRed: 1.0, green: 0.945, blue: 0.949, alpha: 1.0))
+    let b3 = CGRect(x: sx(264.5), y: sy(308.6 + 23.8), width: sw(470.4), height: sh(23.8))
+    ctx.addPath(CGPath(roundedRect: b3, cornerWidth: sh(11.9), cornerHeight: sh(11.9), transform: nil))
+    ctx.fillPath()
+
+    // === Branching white curves ===
+    ctx.setStrokeColor(.white)
+    ctx.setLineWidth(sw(22))
+    ctx.setLineCap(.round)
+
+    // Left curve
+    ctx.move(to: CGPoint(x: sx(512), y: sy(380)))
+    ctx.addCurve(to: CGPoint(x: sx(260), y: sy(660)),
+                 control1: CGPoint(x: sx(512), y: sy(540)),
+                 control2: CGPoint(x: sx(280), y: sy(560)))
     ctx.strokePath()
 
-    // Center circle (hub)
-    let hubRadius = s * 0.12
-    let cx = s / 2
-    let cy = s / 2
-    let hubRect = CGRect(x: cx - hubRadius, y: cy - hubRadius, width: hubRadius * 2, height: hubRadius * 2)
+    // Center line
+    ctx.move(to: CGPoint(x: sx(512), y: sy(380)))
+    ctx.addLine(to: CGPoint(x: sx(512), y: sy(660)))
+    ctx.strokePath()
 
-    let hubColors = [
-        CGColor(srgbRed: 0.3, green: 0.75, blue: 0.95, alpha: 1.0),
-        CGColor(srgbRed: 0.15, green: 0.55, blue: 0.8, alpha: 1.0),
-    ]
-    let hubGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: hubColors as CFArray, locations: [0.0, 1.0])!
+    // Right curve
+    ctx.move(to: CGPoint(x: sx(512), y: sy(380)))
+    ctx.addCurve(to: CGPoint(x: sx(764), y: sy(660)),
+                 control1: CGPoint(x: sx(512), y: sy(540)),
+                 control2: CGPoint(x: sx(744), y: sy(560)))
+    ctx.strokePath()
 
-    ctx.saveGState()
-    ctx.addEllipse(in: hubRect)
-    ctx.clip()
-    ctx.drawRadialGradient(hubGradient, startCenter: CGPoint(x: cx, y: cy + hubRadius * 0.3), startRadius: 0, endCenter: CGPoint(x: cx, y: cy), endRadius: hubRadius, options: .drawsAfterEndLocation)
-    ctx.restoreGState()
+    // === Browser cards (3 at bottom) ===
+    let cardXs: [CGFloat] = [156, 412, 668]
+    let cardW: CGFloat = 208
+    let cardTopSvg: CGFloat = 660
+    let cardBotSvg: CGFloat = 880
+    let cr: CGFloat = 20
 
-    // Routing arrows from center to 3 directions (top-left, top-right, bottom)
-    let arrowColor = CGColor(srgbRed: 0.5, green: 0.85, blue: 1.0, alpha: 0.9)
-    ctx.setStrokeColor(arrowColor)
-    ctx.setLineCap(.round)
-    ctx.setLineJoin(.round)
-    ctx.setLineWidth(s * 0.035)
+    for cardX in cardXs {
+        let path = CGMutablePath()
+        // Bottom-left
+        path.move(to: CGPoint(x: sx(cardX), y: sy(cardBotSvg)))
+        // Left edge up to curve start
+        path.addLine(to: CGPoint(x: sx(cardX), y: sy(cardTopSvg + cr)))
+        // Top-left corner
+        path.addQuadCurve(to: CGPoint(x: sx(cardX + cr), y: sy(cardTopSvg)),
+                          control: CGPoint(x: sx(cardX), y: sy(cardTopSvg)))
+        // Top edge
+        path.addLine(to: CGPoint(x: sx(cardX + cardW - cr), y: sy(cardTopSvg)))
+        // Top-right corner
+        path.addQuadCurve(to: CGPoint(x: sx(cardX + cardW), y: sy(cardTopSvg + cr)),
+                          control: CGPoint(x: sx(cardX + cardW), y: sy(cardTopSvg)))
+        // Right edge down
+        path.addLine(to: CGPoint(x: sx(cardX + cardW), y: sy(cardBotSvg)))
+        path.closeSubpath()
 
-    struct ArrowTarget {
-        let angle: CGFloat // radians from center
-        let length: CGFloat
-    }
+        ctx.setFillColor(.white)
+        ctx.addPath(path)
+        ctx.fillPath()
 
-    let targets = [
-        ArrowTarget(angle: .pi * 0.75, length: s * 0.28),   // top-left
-        ArrowTarget(angle: .pi * 0.25, length: s * 0.28),   // top-right
-        ArrowTarget(angle: -.pi * 0.5, length: s * 0.28),   // bottom
-    ]
+        // Red circle in card
+        let ccx = cardX + cardW / 2
+        let ccr = sw(28.6)
+        ctx.setFillColor(CGColor(srgbRed: 0.882, green: 0.114, blue: 0.282, alpha: 1.0))
+        ctx.fillEllipse(in: CGRect(x: sx(ccx) - ccr, y: sy(743.6) - ccr, width: ccr * 2, height: ccr * 2))
 
-    for target in targets {
-        let startDist = hubRadius + s * 0.03
-        let sx = cx + cos(target.angle) * startDist
-        let sy = cy + sin(target.angle) * startDist
-        let ex = cx + cos(target.angle) * target.length
-        let ey = cy + sin(target.angle) * target.length
-
-        // Line
-        ctx.move(to: CGPoint(x: sx, y: sy))
-        ctx.addLine(to: CGPoint(x: ex, y: ey))
-        ctx.strokePath()
-
-        // Arrowhead
-        let headLen = s * 0.06
-        let headAngle: CGFloat = 0.45
-        let a1x = ex - cos(target.angle - headAngle) * headLen
-        let a1y = ey - sin(target.angle - headAngle) * headLen
-        let a2x = ex - cos(target.angle + headAngle) * headLen
-        let a2y = ey - sin(target.angle + headAngle) * headLen
-
-        ctx.move(to: CGPoint(x: a1x, y: a1y))
-        ctx.addLine(to: CGPoint(x: ex, y: ey))
-        ctx.addLine(to: CGPoint(x: a2x, y: a2y))
-        ctx.strokePath()
-    }
-
-    // Small circles at arrow endpoints (browser nodes)
-    let nodeRadius = s * 0.055
-    let nodeColors = [
-        CGColor(srgbRed: 0.95, green: 0.6, blue: 0.2, alpha: 1.0),  // orange
-        CGColor(srgbRed: 0.3, green: 0.8, blue: 0.4, alpha: 1.0),   // green
-        CGColor(srgbRed: 0.85, green: 0.3, blue: 0.5, alpha: 1.0),  // pink
-    ]
-
-    for (i, target) in targets.enumerated() {
-        let nx = cx + cos(target.angle) * (target.length + nodeRadius * 0.5)
-        let ny = cy + sin(target.angle) * (target.length + nodeRadius * 0.5)
-        let nodeRect = CGRect(x: nx - nodeRadius, y: ny - nodeRadius, width: nodeRadius * 2, height: nodeRadius * 2)
-
-        ctx.setFillColor(nodeColors[i])
-        ctx.fillEllipse(in: nodeRect)
-
-        ctx.setStrokeColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.3))
-        ctx.setLineWidth(s * 0.01)
-        ctx.strokeEllipse(in: nodeRect)
+        // Pink bar in card
+        let pbW = sw(104), pbH = sh(19.8)
+        let pbRect = CGRect(x: sx(ccx) - pbW / 2, y: sy(796.4 + 19.8), width: pbW, height: pbH)
+        ctx.setFillColor(CGColor(srgbRed: 0.882, green: 0.114, blue: 0.282, alpha: 0.4))
+        ctx.addPath(CGPath(roundedRect: pbRect, cornerWidth: sh(9.9), cornerHeight: sh(9.9), transform: nil))
+        ctx.fillPath()
     }
 
     image.unlockFocus()
