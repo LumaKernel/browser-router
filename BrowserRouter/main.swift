@@ -388,37 +388,39 @@ struct SettingsView: View {
 struct TruncatedURLView: View {
     let url: String
     let font: Font
-    private let maxLength = 120
-
-    private var parts: (head: String, ellipsis: Bool, tail: String) {
-        if url.count <= maxLength {
-            return (url, false, "")
-        }
-        let half = maxLength / 2
-        let head = String(url.prefix(half))
-        let tail = String(url.suffix(half))
-        return (head, true, tail)
-    }
 
     var body: some View {
-        let p = parts
-        if p.ellipsis {
-            (Text(p.head)
-                .foregroundColor(Theme.textPrimary)
-            + Text(" ... ")
-                .foregroundColor(Theme.accent.opacity(0.7))
-            + Text(p.tail)
-                .foregroundColor(Theme.textPrimary))
-                .font(font)
-                .lineLimit(2)
-                .help(url)
-        } else {
-            Text(url)
-                .font(font)
-                .foregroundColor(Theme.textPrimary)
-                .lineLimit(2)
-                .help(url)
+        GeometryReader { geo in
+            let charWidth: CGFloat = 7.8 * Settings.shared.uiScale
+            let maxChars = max(20, Int(geo.size.width / charWidth) * 2)
+            let p = truncate(url, maxLength: maxChars)
+            if p.ellipsis {
+                (Text(p.head)
+                    .foregroundColor(Theme.textPrimary)
+                + Text(" ... ")
+                    .foregroundColor(Theme.accent.opacity(0.7))
+                + Text(p.tail)
+                    .foregroundColor(Theme.textPrimary))
+                    .font(font)
+                    .lineLimit(2)
+                    .help(url)
+            } else {
+                Text(url)
+                    .font(font)
+                    .foregroundColor(Theme.textPrimary)
+                    .lineLimit(2)
+                    .help(url)
+            }
         }
+        .frame(height: lineHeight * 2)
+    }
+
+    private var lineHeight: CGFloat { 16 * Settings.shared.uiScale }
+
+    private func truncate(_ s: String, maxLength: Int) -> (head: String, ellipsis: Bool, tail: String) {
+        if s.count <= maxLength { return (s, false, "") }
+        let half = maxLength / 2
+        return (String(s.prefix(half)), true, String(s.suffix(half)))
     }
 }
 
