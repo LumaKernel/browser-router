@@ -155,7 +155,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag {
-            window?.makeKeyAndOrderFront(nil)
+            showWindow()
         }
         return true
     }
@@ -195,14 +195,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window?.performClose(nil)
     }
 
+    private func showWindow() {
+        guard let window = window else { return }
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate()
+        let s = Settings.shared
+        let targetSize = NSSize(width: s.windowWidth, height: s.windowHeight)
+        DispatchQueue.main.async {
+            window.setContentSize(targetSize)
+        }
+    }
+
     @objc func handleGetURL(_ event: NSAppleEventDescriptor, replyEvent: NSAppleEventDescriptor) {
         guard let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue else {
             return
         }
         urlStore.addURL(urlString)
         DispatchQueue.main.async { [weak self] in
-            self?.window?.makeKeyAndOrderFront(nil)
-            NSApp.activate()
+            self?.showWindow()
         }
     }
 }
