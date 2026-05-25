@@ -19,6 +19,12 @@ cp ".build/release/BrowserRouter" "$MACOS_DIR/BrowserRouter"
 cp "$SCRIPT_DIR/BrowserRouter/Info.plist" "$CONTENTS_DIR/Info.plist"
 cp "$SCRIPT_DIR/BrowserRouter/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
 
+# Embed appVersion from Version.swift into Info.plist
+APP_VERSION=$(grep -o 'appVersion: UInt = [0-9]*' "$SCRIPT_DIR/BrowserRouter/Version.swift" | grep -o '[0-9]*')
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $APP_VERSION" "$CONTENTS_DIR/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 0.0.$APP_VERSION" "$CONTENTS_DIR/Info.plist"
+echo "Version: 0.0.$APP_VERSION ($APP_VERSION)"
+
 echo "Signing..."
 codesign --force --sign - "$BUNDLE_DIR"
 codesign -v "$BUNDLE_DIR"

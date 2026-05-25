@@ -23,11 +23,24 @@ class Settings: ObservableObject {
     @Published var autoCloseOnAction: Bool {
         didSet { UserDefaults.standard.set(autoCloseOnAction, forKey: "autoCloseOnAction") }
     }
+    @Published var uiScale: Double {
+        didSet { UserDefaults.standard.set(uiScale, forKey: "uiScale") }
+    }
+
+    var scaledFont: Font { .system(size: 13 * uiScale, design: .monospaced) }
+    var scaledCaption: Font { .system(size: 10 * uiScale) }
+    var scaledIconSize: CGFloat { 16 * uiScale }
+    var scaledPadH: CGFloat { 14 * uiScale }
+    var scaledPadV: CGFloat { 10 * uiScale }
+    var scaledButtonWidth: CGFloat { 54 * uiScale }
+    var scaledIconButtonSize: CGFloat { 20 * uiScale }
 
     private init() {
         self.iconOnly = UserDefaults.standard.bool(forKey: "iconOnly")
         self.clearOnClose = UserDefaults.standard.bool(forKey: "clearOnClose")
         self.autoCloseOnAction = UserDefaults.standard.bool(forKey: "autoCloseOnAction")
+        let stored = UserDefaults.standard.double(forKey: "uiScale")
+        self.uiScale = stored > 0 ? stored : 1.0
     }
 }
 
@@ -226,9 +239,16 @@ struct SettingsView: View {
             Toggle("Icon-only browser buttons", isOn: $settings.iconOnly)
             Toggle("Clear history on window close", isOn: $settings.clearOnClose)
             Toggle("Auto-close after action", isOn: $settings.autoCloseOnAction)
+            HStack {
+                Text("UI size")
+                Slider(value: $settings.uiScale, in: 0.7...2.0, step: 0.1)
+                Text("\(Int(settings.uiScale * 100))%")
+                    .frame(width: 40, alignment: .trailing)
+                    .monospacedDigit()
+            }
         }
         .padding(20)
-        .frame(minWidth: 320, minHeight: 120)
+        .frame(minWidth: 360, minHeight: 160)
     }
 }
 
@@ -261,16 +281,16 @@ struct ContentView: View {
                         LazyVStack(alignment: .leading, spacing: 0) {
                             ForEach(urlStore.urls) { entry in
                                 let isHighlighted = urlStore.highlightedId == entry.id
-                                VStack(alignment: .leading, spacing: 6) {
+                                VStack(alignment: .leading, spacing: 6 * settings.uiScale) {
                                     Text(entry.url)
-                                        .font(.system(.body, design: .monospaced))
+                                        .font(settings.scaledFont)
                                         .foregroundColor(Theme.textPrimary)
                                         .textSelection(.enabled)
                                         .lineLimit(2)
                                     Text(entry.timestamp, style: .time)
-                                        .font(.caption)
+                                        .font(settings.scaledCaption)
                                         .foregroundColor(Theme.textSecondary)
-                                    FlowLayout(spacing: 6) {
+                                    FlowLayout(spacing: 6 * settings.uiScale) {
                                         Button(action: {
                                             performAction {
                                                 NSPasteboard.general.clearContents()
@@ -284,7 +304,7 @@ struct ContentView: View {
                                             }
                                         }) {
                                             Text(copiedId == entry.id ? "Copied!" : "Copy")
-                                                .frame(width: 54)
+                                                .frame(width: settings.scaledButtonWidth)
                                         }
                                         .buttonStyle(.borderedProminent)
                                         .tint(Theme.accent)
@@ -297,7 +317,7 @@ struct ContentView: View {
                                             }) {
                                                 if settings.iconOnly {
                                                     Image(nsImage: browser.icon)
-                                                        .frame(width: 20, height: 20)
+                                                        .frame(width: settings.scaledIconButtonSize, height: settings.scaledIconButtonSize)
                                                 } else {
                                                     HStack(spacing: 3) {
                                                         Image(nsImage: browser.icon)
@@ -311,8 +331,8 @@ struct ContentView: View {
                                         }
                                     }
                                 }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 10)
+                                .padding(.horizontal, settings.scaledPadH)
+                                .padding(.vertical, settings.scaledPadV)
                                 .background(isHighlighted ? Theme.highlight : Color.clear)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 4)
