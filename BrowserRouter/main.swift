@@ -32,6 +32,9 @@ class Settings: ObservableObject {
     @Published var windowHeight: Double {
         didSet { UserDefaults.standard.set(windowHeight, forKey: "windowHeight") }
     }
+    @Published var alwaysOnTop: Bool {
+        didSet { UserDefaults.standard.set(alwaysOnTop, forKey: "alwaysOnTop") }
+    }
     @Published var hiddenBrowserIds: Set<String> {
         didSet { UserDefaults.standard.set(Array(hiddenBrowserIds), forKey: "hiddenBrowserIds") }
     }
@@ -49,6 +52,8 @@ class Settings: ObservableObject {
         self.iconOnly = UserDefaults.standard.bool(forKey: "iconOnly")
         self.clearOnClose = UserDefaults.standard.bool(forKey: "clearOnClose")
         self.autoCloseOnAction = UserDefaults.standard.bool(forKey: "autoCloseOnAction")
+        let storedOnTop = UserDefaults.standard.object(forKey: "alwaysOnTop")
+        self.alwaysOnTop = storedOnTop as? Bool ?? true
         let storedScale = UserDefaults.standard.double(forKey: "uiScale")
         self.uiScale = storedScale > 0 ? storedScale : 1.0
         let storedW = UserDefaults.standard.double(forKey: "windowWidth")
@@ -101,7 +106,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.isReleasedWhenClosed = false
         window.title = "Browser Router v\(appVersion).0.0"
         window.backgroundColor = NSColor(red: 0.08, green: 0.18, blue: 0.28, alpha: 1.0)
-        window.level = .floating
+        window.level = s.alwaysOnTop ? .floating : .normal
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.contentView = NSHostingView(rootView: contentView)
         window.contentMinSize = NSSize(width: 300, height: 150)
@@ -168,7 +173,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         window.isReleasedWhenClosed = false
-        window.title = "Browser Router Settings"
+        window.title = "Browser Router Settings v\(appVersion).0.0"
         window.level = .floating
         window.center()
         window.contentView = NSHostingView(rootView: SettingsView())
@@ -305,6 +310,12 @@ struct SettingsView: View {
                 .onAppear { checkDefaultBrowser() }
             }
             Section("Behavior") {
+                VStack(alignment: .leading, spacing: 2) {
+                    Toggle("Always on top", isOn: $settings.alwaysOnTop)
+                    Text("Requires restart to apply")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 Toggle("Icon-only browser buttons", isOn: $settings.iconOnly)
                 Toggle("Clear history on window close", isOn: $settings.clearOnClose)
                 Toggle("Auto-close after action", isOn: $settings.autoCloseOnAction)
@@ -359,10 +370,19 @@ struct SettingsView: View {
                     Label("Hide a browser...", systemImage: "minus.circle")
                 }
             }
+            Section {
+                HStack {
+                    Spacer()
+                    Text("Browser Router v\(appVersion).0.0")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+            }
         }
         .formStyle(.grouped)
         .padding(12)
-        .frame(minWidth: 400, minHeight: 480)
+        .frame(minWidth: 400, minHeight: 500)
     }
 
     private func checkDefaultBrowser() {
