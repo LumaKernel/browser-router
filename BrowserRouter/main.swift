@@ -2,13 +2,13 @@ import Cocoa
 import SwiftUI
 
 enum Theme {
-    static let bgDark = Color(red: 0.08, green: 0.18, blue: 0.28)
-    static let bgMid = Color(red: 0.10, green: 0.22, blue: 0.33)
-    static let accent = Color(red: 0.3, green: 0.75, blue: 0.95)
-    static let highlight = Color(red: 0.3, green: 0.75, blue: 0.95).opacity(0.12)
-    static let textPrimary = Color(red: 0.85, green: 0.92, blue: 0.97)
-    static let textSecondary = Color(red: 0.5, green: 0.65, blue: 0.75)
-    static let border = Color(red: 0.2, green: 0.4, blue: 0.55)
+    static let bgDark = Color(red: 0.12, green: 0.06, blue: 0.09)       // deep rose-black
+    static let bgMid = Color(red: 0.18, green: 0.08, blue: 0.12)        // dark rose
+    static let accent = Color(red: 0.984, green: 0.443, blue: 0.522)    // rose-400 #fb7185
+    static let highlight = Color(red: 0.882, green: 0.114, blue: 0.282).opacity(0.15) // rose-600
+    static let textPrimary = Color(red: 0.97, green: 0.92, blue: 0.93)  // warm white
+    static let textSecondary = Color(red: 0.65, green: 0.45, blue: 0.50) // muted rose
+    static let border = Color(red: 0.35, green: 0.15, blue: 0.22)       // rose border
 }
 
 class Settings: ObservableObject {
@@ -105,7 +105,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.isReleasedWhenClosed = false
         window.title = "Browser Router v\(appVersion).0.0"
-        window.backgroundColor = NSColor(red: 0.08, green: 0.18, blue: 0.28, alpha: 1.0)
+        window.backgroundColor = NSColor(red: 0.12, green: 0.06, blue: 0.09, alpha: 1.0)
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.contentView = NSHostingView(rootView: contentView)
