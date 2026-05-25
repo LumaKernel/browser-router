@@ -39,4 +39,4 @@ Requires Xcode command line tools and macOS 14+.
 
 ## License
 
-MIT
+[MIT](./LICENSE)
