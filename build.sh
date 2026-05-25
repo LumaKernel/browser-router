@@ -17,6 +17,7 @@ swift build -c release
 
 cp ".build/release/BrowserRouter" "$MACOS_DIR/BrowserRouter"
 cp "$SCRIPT_DIR/BrowserRouter/Info.plist" "$CONTENTS_DIR/Info.plist"
+cp "$SCRIPT_DIR/BrowserRouter/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
 
 echo "Signing..."
 codesign --force --sign - "$BUNDLE_DIR"

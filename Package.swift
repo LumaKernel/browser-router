@@ -7,7 +7,8 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "BrowserRouter",
-            path: "BrowserRouter"
+            path: "BrowserRouter",
+            exclude: ["Info.plist", "AppIcon.icns", "AppIcon.iconset"]
         )
     ]
 )

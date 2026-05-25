@@ -1,6 +1,15 @@
 import Cocoa
 import SwiftUI
 
+enum Theme {
+    static let bgDark = Color(red: 0.08, green: 0.18, blue: 0.28)
+    static let bgMid = Color(red: 0.10, green: 0.22, blue: 0.33)
+    static let accent = Color(red: 0.3, green: 0.75, blue: 0.95)
+    static let textPrimary = Color(red: 0.85, green: 0.92, blue: 0.97)
+    static let textSecondary = Color(red: 0.5, green: 0.65, blue: 0.75)
+    static let border = Color(red: 0.2, green: 0.4, blue: 0.55)
+}
+
 class Settings: ObservableObject {
     static let shared = Settings()
 
@@ -40,6 +49,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.isReleasedWhenClosed = false
         window.title = "Browser Router"
+        window.backgroundColor = NSColor(red: 0.08, green: 0.18, blue: 0.28, alpha: 1.0)
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.center()
@@ -191,57 +201,72 @@ struct ContentView: View {
                 Spacer()
                 Text("Waiting for URLs...")
                     .font(.title2)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Theme.textSecondary)
                 Spacer()
             } else {
-                List(urlStore.urls) { entry in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(entry.url)
-                            .font(.system(.body, design: .monospaced))
-                            .textSelection(.enabled)
-                            .lineLimit(2)
-                        Text(entry.timestamp, style: .time)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        FlowLayout(spacing: 6) {
-                            Button(action: {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(entry.url, forType: .string)
-                                copiedId = entry.id
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                    if copiedId == entry.id {
-                                        copiedId = nil
-                                    }
-                                }
-                            }) {
-                                Text(copiedId == entry.id ? "Copied!" : "Copy")
-                                    .frame(width: 54)
-                            }
-                            .buttonStyle(.borderedProminent)
-
-                            ForEach(browsers) { browser in
-                                Button(action: {
-                                    browser.open(url: entry.url)
-                                }) {
-                                    if settings.iconOnly {
-                                        Image(nsImage: browser.icon)
-                                            .frame(width: 20, height: 20)
-                                    } else {
-                                        HStack(spacing: 3) {
-                                            Image(nsImage: browser.icon)
-                                            Text(browser.name)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(urlStore.urls) { entry in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(entry.url)
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundColor(Theme.textPrimary)
+                                    .textSelection(.enabled)
+                                    .lineLimit(2)
+                                Text(entry.timestamp, style: .time)
+                                    .font(.caption)
+                                    .foregroundColor(Theme.textSecondary)
+                                FlowLayout(spacing: 6) {
+                                    Button(action: {
+                                        NSPasteboard.general.clearContents()
+                                        NSPasteboard.general.setString(entry.url, forType: .string)
+                                        copiedId = entry.id
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                            if copiedId == entry.id {
+                                                copiedId = nil
+                                            }
                                         }
+                                    }) {
+                                        Text(copiedId == entry.id ? "Copied!" : "Copy")
+                                            .frame(width: 54)
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(Theme.accent)
+
+                                    ForEach(browsers) { browser in
+                                        Button(action: {
+                                            browser.open(url: entry.url)
+                                        }) {
+                                            if settings.iconOnly {
+                                                Image(nsImage: browser.icon)
+                                                    .frame(width: 20, height: 20)
+                                            } else {
+                                                HStack(spacing: 3) {
+                                                    Image(nsImage: browser.icon)
+                                                    Text(browser.name)
+                                                }
+                                            }
+                                        }
+                                        .buttonStyle(.bordered)
+                                        .tint(Theme.accent)
+                                        .help(browser.name)
                                     }
                                 }
-                                .buttonStyle(.bordered)
-                                .help(browser.name)
                             }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .overlay(
+                                Rectangle()
+                                    .frame(height: 1)
+                                    .foregroundColor(Theme.border.opacity(0.4)),
+                                alignment: .bottom
+                            )
                         }
                     }
-                    .padding(.vertical, 4)
                 }
             }
         }
+        .background(Theme.bgDark)
         .frame(minWidth: 500, minHeight: 200)
     }
 }

@@ -1,1 +1,1 @@
-let appVersion: UInt = 9
+let appVersion: UInt = 10
