@@ -284,8 +284,26 @@ struct SettingsView: View {
         allBrowsers.filter { settings.hiddenBrowserIds.contains($0.id) }
     }
 
+    @State private var isDefaultBrowser = false
+
     var body: some View {
         Form {
+            Section("General") {
+                HStack {
+                    if isDefaultBrowser {
+                        Label("Browser Router is the default browser", systemImage: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    } else {
+                        Text("Browser Router is not the default browser")
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button("Set as Default") {
+                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Desktop-Settings.extension")!)
+                        }
+                    }
+                }
+                .onAppear { checkDefaultBrowser() }
+            }
             Section("Behavior") {
                 Toggle("Icon-only browser buttons", isOn: $settings.iconOnly)
                 Toggle("Clear history on window close", isOn: $settings.clearOnClose)
@@ -344,7 +362,17 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding(12)
-        .frame(minWidth: 400, minHeight: 420)
+        .frame(minWidth: 400, minHeight: 480)
+    }
+
+    private func checkDefaultBrowser() {
+        guard let bundleId = Bundle.main.bundleIdentifier,
+              let defaultURL = NSWorkspace.shared.urlForApplication(toOpen: URL(string: "https://example.com")!) else {
+            isDefaultBrowser = false
+            return
+        }
+        let defaultBundleId = Bundle(url: defaultURL)?.bundleIdentifier ?? ""
+        isDefaultBrowser = defaultBundleId.caseInsensitiveCompare(bundleId) == .orderedSame
     }
 }
 

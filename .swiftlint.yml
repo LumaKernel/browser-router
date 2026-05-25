@@ -1,0 +1,12 @@
+included:
+  - BrowserRouter
+
+excluded:
+  - .build
+
+disabled_rules:
+  - trailing_comma
+  - type_body_length
+  - file_length
+  - function_body_length
+  - line_length

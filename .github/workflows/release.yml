@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build app bundle
+        run: ./build.sh
+
+      - name: Create zip
+        run: |
+          cd build
+          zip -r "Browser-Router.app.zip" "Browser Router.app"
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(grep -o 'appVersion: UInt = [0-9]*' BrowserRouter/Version.swift | grep -o '[0-9]*')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            build/Browser-Router.app.zip \
+            --title "Browser Router ${{ steps.version.outputs.version }}.0.0" \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
