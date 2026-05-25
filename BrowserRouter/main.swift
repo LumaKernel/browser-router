@@ -32,6 +32,9 @@ class Settings: ObservableObject {
     @Published var windowHeight: Double {
         didSet { UserDefaults.standard.set(windowHeight, forKey: "windowHeight") }
     }
+    @Published var hiddenBrowserIds: Set<String> {
+        didSet { UserDefaults.standard.set(Array(hiddenBrowserIds), forKey: "hiddenBrowserIds") }
+    }
 
     var scaledFont: Font { .system(size: 13 * uiScale, design: .monospaced) }
     var scaledButtonFont: Font { .system(size: 13 * uiScale) }
@@ -52,6 +55,8 @@ class Settings: ObservableObject {
         self.windowWidth = storedW > 0 ? storedW : 600
         let storedH = UserDefaults.standard.double(forKey: "windowHeight")
         self.windowHeight = storedH > 0 ? storedH : 300
+        let storedHidden = UserDefaults.standard.stringArray(forKey: "hiddenBrowserIds") ?? []
+        self.hiddenBrowserIds = Set(storedHidden)
     }
 }
 
@@ -136,7 +141,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 340),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 480),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -182,7 +187,7 @@ struct BrowserInfo: Identifiable {
     let name: String
     let icon: NSImage
 
-    static func detectBrowsers() -> [BrowserInfo] {
+    static func allBrowsers() -> [BrowserInfo] {
         let myBundleId = (Bundle.main.bundleIdentifier ?? "").lowercased()
         let httpsURL = URL(string: "https://example.com")!
         let appURLs = NSWorkspace.shared.urlsForApplications(toOpen: httpsURL)
@@ -196,9 +201,13 @@ struct BrowserInfo: Identifiable {
             var name = FileManager.default.displayName(atPath: appURL.path)
             if name.hasSuffix(".app") { name = String(name.dropLast(4)) }
             let icon = NSWorkspace.shared.icon(forFile: appURL.path)
-            icon.size = NSSize(width: 16, height: 16)
             return BrowserInfo(id: bundleId, name: name, icon: icon)
         }
+    }
+
+    static func visibleBrowsers() -> [BrowserInfo] {
+        let hidden = Settings.shared.hiddenBrowserIds
+        return allBrowsers().filter { !hidden.contains($0.id) }
     }
 
     func open(url: String) {
@@ -245,6 +254,14 @@ class URLStore: ObservableObject {
 
 struct SettingsView: View {
     @ObservedObject private var settings = Settings.shared
+    private let allBrowsers = BrowserInfo.allBrowsers()
+
+    private var visibleBrowsers: [BrowserInfo] {
+        allBrowsers.filter { !settings.hiddenBrowserIds.contains($0.id) }
+    }
+    private var hiddenBrowsers: [BrowserInfo] {
+        allBrowsers.filter { settings.hiddenBrowserIds.contains($0.id) }
+    }
 
     var body: some View {
         Form {
@@ -276,10 +293,37 @@ struct SettingsView: View {
                         .monospacedDigit()
                 }
             }
+            Section("Hidden Browsers") {
+                if hiddenBrowsers.isEmpty {
+                    Text("No hidden browsers")
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(hiddenBrowsers) { browser in
+                        HStack {
+                            Image(nsImage: browser.icon)
+                                .frame(width: 16, height: 16)
+                            Text(browser.name)
+                            Spacer()
+                            Button("Show") {
+                                settings.hiddenBrowserIds.remove(browser.id)
+                            }
+                        }
+                    }
+                }
+                Menu {
+                    ForEach(visibleBrowsers) { browser in
+                        Button(browser.name) {
+                            settings.hiddenBrowserIds.insert(browser.id)
+                        }
+                    }
+                } label: {
+                    Label("Hide a browser...", systemImage: "minus.circle")
+                }
+            }
         }
         .formStyle(.grouped)
         .padding(12)
-        .frame(minWidth: 400, minHeight: 300)
+        .frame(minWidth: 400, minHeight: 420)
     }
 }
 
@@ -287,7 +331,7 @@ struct ContentView: View {
     @ObservedObject var urlStore: URLStore
     @ObservedObject private var settings = Settings.shared
     @State private var copiedId: UUID?
-    private let browsers = BrowserInfo.detectBrowsers()
+    private let browsers = BrowserInfo.visibleBrowsers()
 
     private func performAction(_ action: () -> Void) {
         action()
@@ -353,6 +397,7 @@ struct ContentView: View {
                                                 } else {
                                                     HStack(spacing: 3) {
                                                         Image(nsImage: browser.icon)
+                                                            .frame(width: settings.scaledIconSize, height: settings.scaledIconSize)
                                                         Text(browser.name)
                                                             .font(settings.scaledButtonFont)
                                                     }
