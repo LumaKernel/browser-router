@@ -1,6 +1,10 @@
-# Browser Router
+<p align="center">
+  <img src="BrowserRouter/AppIcon.iconset/icon_256x256.png" width="128" height="128" alt="Browser Router">
+</p>
 
-A macOS app that registers as the default web browser and lets you choose which browser to open URLs in.
+<h1 align="center">Browser Router</h1>
+
+<p align="center">A macOS app that registers as the default web browser and lets you choose which browser to open URLs in.</p>
 
 ## What it does
 
