@@ -41,6 +41,15 @@ Since the app is ad-hoc signed, you may need to right-click > Open on first laun
 
 Requires Xcode command line tools and macOS 14+.
 
+## Related
+
+If you need more advanced features, these might be what you're looking for:
+
+- [Browserosaurus](https://github.com/will-stone/browserosaurus) — Electron-based browser picker. Similar concept to Browser Router.
+- [Finicky](https://github.com/johnste/finicky) — Rule-based routing via JavaScript config. Popular among engineers.
+- [Default Tamer](https://github.com/0xdps/default-tamer) — Routes by source app and URL pattern, with Option-key manual picker.
+- [Yojam](https://yojam.app/) — Feature-rich: browser profile targeting, source app detection, tracking parameter removal, URL rewriting, Shortcuts/Raycast/Alfred integration via yojam:// scheme.
+
 ## License
 
 [MIT](./LICENSE)
