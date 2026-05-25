@@ -99,7 +99,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         window.isReleasedWhenClosed = false
-        window.title = "Browser Router"
+        window.title = "Browser Router v\(appVersion).0.0"
         window.backgroundColor = NSColor(red: 0.08, green: 0.18, blue: 0.28, alpha: 1.0)
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -464,7 +464,7 @@ struct ContentView: View {
     }
 
     private func resizeWindow() {
-        guard let window = NSApp.windows.first(where: { $0.title == "Browser Router" }) else { return }
+        guard let window = NSApp.windows.first(where: { $0.title.hasPrefix("Browser Router v") }) else { return }
         var frame = window.frame
         let newSize = NSSize(width: settings.windowWidth, height: settings.windowHeight)
         frame.origin.y += frame.size.height - newSize.height
