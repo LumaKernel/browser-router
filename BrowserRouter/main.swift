@@ -414,10 +414,12 @@ struct ContentView: View {
                                             }) {
                                                 if settings.iconOnly {
                                                     Image(nsImage: browser.icon)
+                                                        .resizable()
                                                         .frame(width: settings.scaledIconButtonSize, height: settings.scaledIconButtonSize)
                                                 } else {
                                                     HStack(spacing: 3) {
                                                         Image(nsImage: browser.icon)
+                                                            .resizable()
                                                             .frame(width: settings.scaledIconSize, height: settings.scaledIconSize)
                                                         Text(browser.name)
                                                             .font(settings.scaledButtonFont)
