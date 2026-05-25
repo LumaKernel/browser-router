@@ -1,8 +1,21 @@
 import Cocoa
 import SwiftUI
 
+class Settings: ObservableObject {
+    static let shared = Settings()
+
+    @Published var iconOnly: Bool {
+        didSet { UserDefaults.standard.set(iconOnly, forKey: "iconOnly") }
+    }
+
+    private init() {
+        self.iconOnly = UserDefaults.standard.bool(forKey: "iconOnly")
+    }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow?
+    private var settingsWindow: NSWindow?
     private let urlStore = URLStore()
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -40,6 +53,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let appMenuItem = NSMenuItem()
         let appMenu = NSMenu()
+        appMenu.addItem(withTitle: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
+        appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(withTitle: "Quit URL Catcher", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appMenuItem.submenu = appMenu
         mainMenu.addItem(appMenuItem)
@@ -65,6 +80,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             window?.makeKeyAndOrderFront(nil)
         }
         return true
+    }
+
+    @objc func openSettings() {
+        if let existing = settingsWindow {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate()
+            return
+        }
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 300, height: 120),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.isReleasedWhenClosed = false
+        window.title = "Settings"
+        window.level = .floating
+        window.center()
+        window.contentView = NSHostingView(rootView: SettingsView())
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate()
+        self.settingsWindow = window
     }
 
     @objc func handleGetURL(_ event: NSAppleEventDescriptor, replyEvent: NSAppleEventDescriptor) {
@@ -130,8 +167,20 @@ class URLStore: ObservableObject {
     }
 }
 
+struct SettingsView: View {
+    @ObservedObject private var settings = Settings.shared
+
+    var body: some View {
+        Form {
+            Toggle("Icon-only browser buttons", isOn: $settings.iconOnly)
+        }
+        .padding(20)
+    }
+}
+
 struct ContentView: View {
     @ObservedObject var urlStore: URLStore
+    @ObservedObject private var settings = Settings.shared
     @State private var copiedId: UUID?
     private let browsers = BrowserInfo.detectBrowsers()
 
@@ -173,12 +222,18 @@ struct ContentView: View {
                                 Button(action: {
                                     browser.open(url: entry.url)
                                 }) {
-                                    HStack(spacing: 3) {
+                                    if settings.iconOnly {
                                         Image(nsImage: browser.icon)
-                                        Text(browser.name)
+                                            .frame(width: 20, height: 20)
+                                    } else {
+                                        HStack(spacing: 3) {
+                                            Image(nsImage: browser.icon)
+                                            Text(browser.name)
+                                        }
                                     }
                                 }
                                 .buttonStyle(.bordered)
+                                .help(browser.name)
                             }
                         }
                     }
