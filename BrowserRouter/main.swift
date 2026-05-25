@@ -389,7 +389,7 @@ struct ContentView: View {
     @ObservedObject var urlStore: URLStore
     @ObservedObject private var settings = Settings.shared
     @State private var copiedId: UUID?
-    private let browsers = BrowserInfo.visibleBrowsers()
+    private var browsers: [BrowserInfo] { BrowserInfo.visibleBrowsers() }
 
     private func performAction(_ action: () -> Void) {
         action()
