@@ -153,7 +153,7 @@ struct ContentView: View {
                         Text(entry.timestamp, style: .time)
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        HStack(spacing: 6) {
+                        FlowLayout(spacing: 6) {
                             Button(action: {
                                 NSPasteboard.general.clearContents()
                                 NSPasteboard.general.setString(entry.url, forType: .string)
@@ -187,6 +187,53 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 500, minHeight: 200)
+    }
+}
+
+struct FlowLayout: Layout {
+    let spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = computeRows(proposal: proposal, subviews: subviews)
+        var height: CGFloat = 0
+        for (i, row) in rows.enumerated() {
+            let rowHeight = row.map { subviews[$0].sizeThatFits(.unspecified).height }.max() ?? 0
+            height += rowHeight
+            if i > 0 { height += spacing }
+        }
+        return CGSize(width: proposal.width ?? 0, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let rows = computeRows(proposal: proposal, subviews: subviews)
+        var y = bounds.minY
+        for (i, row) in rows.enumerated() {
+            if i > 0 { y += spacing }
+            var x = bounds.minX
+            let rowHeight = row.map { subviews[$0].sizeThatFits(.unspecified).height }.max() ?? 0
+            for idx in row {
+                let size = subviews[idx].sizeThatFits(.unspecified)
+                subviews[idx].place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+            y += rowHeight
+        }
+    }
+
+    private func computeRows(proposal: ProposedViewSize, subviews: Subviews) -> [[Int]] {
+        let maxWidth = proposal.width ?? .infinity
+        var rows: [[Int]] = [[]]
+        var currentWidth: CGFloat = 0
+        for (i, subview) in subviews.enumerated() {
+            let size = subview.sizeThatFits(.unspecified)
+            if !rows[rows.count - 1].isEmpty && currentWidth + size.width > maxWidth {
+                rows.append([])
+                currentWidth = 0
+            }
+            rows[rows.count - 1].append(i)
+            currentWidth += size.width + spacing
+        }
+        return rows
     }
 }
 
