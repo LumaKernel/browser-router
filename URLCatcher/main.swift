@@ -95,7 +95,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         window.isReleasedWhenClosed = false
-        window.title = "Settings"
+        window.title = "URL Catcher Settings"
         window.level = .floating
         window.center()
         window.contentView = NSHostingView(rootView: SettingsView())
@@ -132,7 +132,8 @@ struct BrowserInfo: Identifiable {
                   let bundleId = bundle.bundleIdentifier?.lowercased() else { return nil }
             guard bundleId != myBundleId else { return nil }
             guard seen.insert(bundleId).inserted else { return nil }
-            let name = FileManager.default.displayName(atPath: appURL.path)
+            var name = FileManager.default.displayName(atPath: appURL.path)
+            if name.hasSuffix(".app") { name = String(name.dropLast(4)) }
             let icon = NSWorkspace.shared.icon(forFile: appURL.path)
             icon.size = NSSize(width: 16, height: 16)
             return BrowserInfo(id: bundleId, name: name, icon: icon)
