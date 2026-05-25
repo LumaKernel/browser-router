@@ -18,6 +18,10 @@ swift build -c release
 cp ".build/release/URLCatcher" "$MACOS_DIR/URLCatcher"
 cp "$SCRIPT_DIR/URLCatcher/Info.plist" "$CONTENTS_DIR/Info.plist"
 
+echo "Signing..."
+codesign --force --sign - "$BUNDLE_DIR"
+codesign -v "$BUNDLE_DIR"
+
 echo "Built: $BUNDLE_DIR"
 echo ""
 echo "To install, run:"
