@@ -60,6 +60,18 @@ class Settings: ObservableObject {
     }
 }
 
+func debugLog(_ msg: String) {
+    let line = "\(msg)\n"
+    if !FileManager.default.fileExists(atPath: "/tmp/browser-router-debug.log") {
+        try? "".write(toFile: "/tmp/browser-router-debug.log", atomically: false, encoding: .utf8)
+    }
+    if let fh = FileHandle(forWritingAtPath: "/tmp/browser-router-debug.log") {
+        fh.seekToEndOfFile()
+        fh.write(line.data(using: .utf8)!)
+        fh.closeFile()
+    }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow?
     private var settingsWindow: NSWindow?
@@ -81,7 +93,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let s = Settings.shared
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 300),
+            contentRect: NSRect(x: 0, y: 0, width: s.windowWidth, height: s.windowHeight),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -91,14 +103,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.backgroundColor = NSColor(red: 0.08, green: 0.18, blue: 0.28, alpha: 1.0)
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        var frame = window.frame
-        frame.size = NSSize(width: s.windowWidth, height: s.windowHeight)
-        window.setFrame(frame, display: false)
-        window.center()
         window.contentView = NSHostingView(rootView: contentView)
+        window.contentMinSize = NSSize(width: 300, height: 150)
+        window.setContentSize(NSSize(width: s.windowWidth, height: s.windowHeight))
+        window.center()
         window.makeKeyAndOrderFront(nil)
         window.delegate = self
         self.window = window
+        // NSHostingView shrinks the window to fit content on first layout pass,
+        // so re-apply the desired size in the next runloop tick.
+        let targetSize = NSSize(width: s.windowWidth, height: s.windowHeight)
+        DispatchQueue.main.async {
+            window.setContentSize(targetSize)
+            window.center()
+        }
     }
 
     private func setupMenu() {
@@ -441,7 +459,6 @@ struct ContentView: View {
             }
         }
         .background(Theme.bgDark)
-        .frame(minWidth: 300, minHeight: 150)
         .onChange(of: settings.windowWidth) { resizeWindow() }
         .onChange(of: settings.windowHeight) { resizeWindow() }
     }
