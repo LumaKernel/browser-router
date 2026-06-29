@@ -215,6 +215,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.showWindow()
         }
     }
+
+    func application(_ sender: NSApplication, open urls: [URL]) {
+        for url in urls {
+            let urlString = url.absoluteString
+            urlStore.addURL(urlString)
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.showWindow()
+        }
+    }
 }
 
 extension AppDelegate: NSWindowDelegate {
