@@ -23,6 +23,15 @@ class Settings: ObservableObject {
     @Published var autoCloseOnAction: Bool {
         didSet { UserDefaults.standard.set(autoCloseOnAction, forKey: "autoCloseOnAction") }
     }
+    @Published var closeOnEsc: Bool {
+        didSet { UserDefaults.standard.set(closeOnEsc, forKey: "closeOnEsc") }
+    }
+    @Published var closeOnUnfocus: Bool {
+        didSet { UserDefaults.standard.set(closeOnUnfocus, forKey: "closeOnUnfocus") }
+    }
+    @Published var copyOnClose: Bool {
+        didSet { UserDefaults.standard.set(copyOnClose, forKey: "copyOnClose") }
+    }
     @Published var uiScale: Double {
         didSet { UserDefaults.standard.set(uiScale, forKey: "uiScale") }
     }
@@ -52,6 +61,9 @@ class Settings: ObservableObject {
         self.iconOnly = UserDefaults.standard.bool(forKey: "iconOnly")
         self.clearOnClose = UserDefaults.standard.bool(forKey: "clearOnClose")
         self.autoCloseOnAction = UserDefaults.standard.bool(forKey: "autoCloseOnAction")
+        self.closeOnEsc = UserDefaults.standard.bool(forKey: "closeOnEsc")
+        self.closeOnUnfocus = UserDefaults.standard.bool(forKey: "closeOnUnfocus")
+        self.copyOnClose = UserDefaults.standard.bool(forKey: "copyOnClose")
         let storedLineLimit = UserDefaults.standard.integer(forKey: "urlLineLimit")
         self.urlLineLimit = storedLineLimit > 0 ? storedLineLimit : 2
         let storedScale = UserDefaults.standard.double(forKey: "uiScale")
@@ -81,6 +93,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow?
     private var settingsWindow: NSWindow?
     private let urlStore = URLStore()
+    private var escMonitor: Any?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         NSAppleEventManager.shared().setEventHandler(
@@ -115,6 +128,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
         window.delegate = self
         self.window = window
+
+        escMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard Settings.shared.closeOnEsc,
+                  event.keyCode == 53,
+                  let mainWindow = self?.window,
+                  mainWindow.isKeyWindow else { return event }
+            mainWindow.performClose(nil)
+            return nil
+        }
+
         // NSHostingView shrinks the window to fit content on first layout pass,
         // so re-apply the desired size in the next runloop tick.
         let targetSize = NSSize(width: s.windowWidth, height: s.windowHeight)
@@ -231,9 +254,22 @@ extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         guard let closingWindow = notification.object as? NSWindow,
               closingWindow === window else { return }
+        if Settings.shared.copyOnClose && !urlStore.closedByAction,
+           let latestURL = urlStore.urls.first?.url {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(latestURL, forType: .string)
+        }
+        urlStore.closedByAction = false
         if Settings.shared.clearOnClose {
             urlStore.clear()
         }
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        guard Settings.shared.closeOnUnfocus,
+              let resignedWindow = notification.object as? NSWindow,
+              resignedWindow === window else { return }
+        resignedWindow.performClose(nil)
     }
 }
 
@@ -279,6 +315,7 @@ struct BrowserInfo: Identifiable {
 class URLStore: ObservableObject {
     @Published var urls: [URLEntry] = []
     @Published var highlightedId: UUID?
+    var closedByAction = false
 
     struct URLEntry: Identifiable {
         let id = UUID()
@@ -342,6 +379,9 @@ struct SettingsView: View {
                 Toggle("Icon-only browser buttons", isOn: $settings.iconOnly)
                 Toggle("Clear history on window close", isOn: $settings.clearOnClose)
                 Toggle("Auto-close after action", isOn: $settings.autoCloseOnAction)
+                Toggle("Close on Esc key", isOn: $settings.closeOnEsc)
+                Toggle("Close on unfocus", isOn: $settings.closeOnUnfocus)
+                Toggle("Copy latest URL on close", isOn: $settings.copyOnClose)
             }
             Section("Appearance") {
                 Stepper("URL line limit: \(settings.urlLineLimit)", value: $settings.urlLineLimit, in: 1...10)
@@ -429,6 +469,7 @@ struct ContentView: View {
     private func performAction(_ action: () -> Void) {
         action()
         if settings.autoCloseOnAction {
+            urlStore.closedByAction = true
             DispatchQueue.main.async {
                 NSApp.keyWindow?.performClose(nil)
             }
