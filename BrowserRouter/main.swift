@@ -121,7 +121,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.backgroundColor = NSColor(red: 0.12, green: 0.06, blue: 0.09, alpha: 1.0)
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        window.contentView = NSHostingView(rootView: contentView)
+        let hostingView = NSHostingView(rootView: contentView)
+        hostingView.sizingOptions = []
+        window.contentView = hostingView
         window.contentMinSize = NSSize(width: 300, height: 150)
         window.setContentSize(NSSize(width: s.windowWidth, height: s.windowHeight))
         window.center()
@@ -136,14 +138,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                   mainWindow.isKeyWindow else { return event }
             mainWindow.performClose(nil)
             return nil
-        }
-
-        // NSHostingView shrinks the window to fit content on first layout pass,
-        // so re-apply the desired size in the next runloop tick.
-        let targetSize = NSSize(width: s.windowWidth, height: s.windowHeight)
-        DispatchQueue.main.async {
-            window.setContentSize(targetSize)
-            window.center()
         }
     }
 
@@ -220,13 +214,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showWindow() {
         guard let window = window else { return }
+        let s = Settings.shared
+        window.setContentSize(NSSize(width: s.windowWidth, height: s.windowHeight))
         window.makeKeyAndOrderFront(nil)
         NSApp.activate()
-        let s = Settings.shared
-        let targetSize = NSSize(width: s.windowWidth, height: s.windowHeight)
-        DispatchQueue.main.async {
-            window.setContentSize(targetSize)
-        }
     }
 
     @objc func handleGetURL(_ event: NSAppleEventDescriptor, replyEvent: NSAppleEventDescriptor) {
