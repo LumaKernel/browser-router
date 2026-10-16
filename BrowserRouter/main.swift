@@ -94,6 +94,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private let urlStore = URLStore()
     private var escMonitor: Any?
+    private var statusItem: NSStatusItem?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         NSAppleEventManager.shared().setEventHandler(
@@ -106,6 +107,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenu()
+        setupStatusItem()
 
         let contentView = ContentView(urlStore: urlStore)
 
@@ -127,6 +129,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.contentMinSize = NSSize(width: 300, height: 150)
         window.setContentSize(NSSize(width: s.windowWidth, height: s.windowHeight))
         window.center()
+        activateDockIcon()
         window.makeKeyAndOrderFront(nil)
         window.delegate = self
         self.window = window
@@ -170,6 +173,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = mainMenu
     }
 
+    private func setupStatusItem() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        if let button = statusItem?.button {
+            button.image = NSImage(systemSymbolName: "globe", accessibilityDescription: "Browser Router")
+        }
+        let menu = NSMenu()
+        menu.addItem(withTitle: "Show Window", action: #selector(statusItemShowWindow), keyEquivalent: "")
+        menu.addItem(withTitle: "Settings...", action: #selector(openSettings), keyEquivalent: "")
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(withTitle: "Quit Browser Router", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
+        statusItem?.menu = menu
+    }
+
+    @objc private func statusItemShowWindow() {
+        showWindow()
+    }
+
+    private func activateDockIcon() {
+        NSApp.setActivationPolicy(.regular)
+    }
+
+    private func deactivateDockIcon() {
+        NSApp.setActivationPolicy(.accessory)
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag {
             showWindow()
@@ -203,6 +231,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.level = .floating
         window.center()
         window.contentView = NSHostingView(rootView: SettingsView())
+        window.delegate = self
+        activateDockIcon()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate()
         self.settingsWindow = window
@@ -216,6 +246,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let window = window else { return }
         let s = Settings.shared
         window.setContentSize(NSSize(width: s.windowWidth, height: s.windowHeight))
+        activateDockIcon()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate()
     }
@@ -243,16 +274,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
-        guard let closingWindow = notification.object as? NSWindow,
-              closingWindow === window else { return }
-        if Settings.shared.copyOnClose && !urlStore.closedByAction,
-           let latestURL = urlStore.urls.first?.url {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(latestURL, forType: .string)
+        guard let closingWindow = notification.object as? NSWindow else { return }
+        if closingWindow === window {
+            if Settings.shared.copyOnClose && !urlStore.closedByAction,
+               let latestURL = urlStore.urls.first?.url {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(latestURL, forType: .string)
+            }
+            urlStore.closedByAction = false
+            if Settings.shared.clearOnClose {
+                urlStore.clear()
+            }
         }
-        urlStore.closedByAction = false
-        if Settings.shared.clearOnClose {
-            urlStore.clear()
+        let mainVisible = closingWindow === window ? false : window?.isVisible == true
+        let settingsVisible = closingWindow === settingsWindow ? false : settingsWindow?.isVisible == true
+        if !mainVisible && !settingsVisible {
+            deactivateDockIcon()
         }
     }
 
